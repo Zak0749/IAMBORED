@@ -9,15 +9,14 @@ import * as ReactDOM from "react-dom";
 
 initializeIcons();
 
-let isOfficeInitialized = false;
-
-const title = "Contoso Task Pane Add-in";
+let subject = "";
+let attendees = [];
 
 const render = (Component) => {
   ReactDOM.render(
     <AppContainer>
       <ThemeProvider>
-        <Component title={title} isOfficeInitialized={isOfficeInitialized} />
+        <Component subject={subject} attendees={[attendees]} />
       </ThemeProvider>
     </AppContainer>,
     document.getElementById("container")
@@ -26,7 +25,14 @@ const render = (Component) => {
 
 /* Render application after Office initializes */
 Office.onReady(() => {
-  isOfficeInitialized = true;
+  const item = Office.context.mailbox.item;
+  subject = item.subject;
+  attendees = item.requiredAttendees.concat(item.optionalAttendees).map((val) => {
+    return {
+      name: val.displayName,
+      email: val.emailAddress,
+    };
+  });
   render(App);
 });
 

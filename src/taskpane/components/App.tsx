@@ -1,74 +1,73 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
-import { DefaultButton } from "@fluentui/react";
+import { ComboBox, DefaultButton, TextField, IComboBoxOption, Stack, IStackTokens } from "@fluentui/react";
 import axios from "axios";
 
 export interface AppProps {
-  title: string;
-  isOfficeInitialized: boolean;
+  subject: string;
+  attendees: { name: string; email: string }[];
 }
 
-export interface AppState {
-  person: string;
-  message: string;
-}
+const containerStackTokens: IStackTokens = { childrenGap: 40 };
 
 export function App(props: AppProps) {
-  let [person, setPerson] = useState("No One");
-  let [message, setMessage] = useState("Asked about outlook");
+  let [options, setOptions] = useState<IComboBoxOption[]>([]);
+  let [extraInfo, setExtraInfo] = useState("");
+  let [selected, setSelected] = useState("");
+  let [message, setMessage] = useState("");
 
-  let onclick = async () => {
+  let upload = async () => {
     try {
-      let response = await axios("https://alphanumericadvancedkeyboardmapping.zak0749.repl.co");
-      let data = response.data as AppState;
+      let object = {
+        subject: props.subject,
+        attendees: props.attendees,
+        extraInfo: extraInfo,
+        selected: selected,
+      };
 
-      setPerson(data.person);
-      setMessage(data.message);
-    } catch (error) {
-      setMessage("error:" + error);
+      let response = await axios.post("https://alphanumericadvancedkeyboardmapping.zak0749.repl.co/upload/", object);
+
+      if (response.status == 200) {
+        setMessage("sucess");
+      } else {
+        setMessage("There was an error");
+      }
+    } catch (err) {
+      setMessage("There was an error");
     }
   };
 
+  const updateOptions = async (_option: IComboBoxOption, _index: number, value: string) => {
+    if (!value) {
+      return;
+    }
+    let response = await axios("https://alphanumericadvancedkeyboardmapping.zak0749.repl.co/matches/" + value);
+
+    setOptions(
+      response.data.map((val) => {
+        return {
+          key: val,
+          text: val,
+        };
+      })
+    );
+  };
+
   return (
-    <div className="ms-welcome">
-      <DefaultButton className="ms-welcome__action" iconProps={{ iconName: "ChevronRight" }} onClick={onclick}>
-        Run
+    <Stack tokens={containerStackTokens} className="main">
+      <TextField label="Additional Information" multiline rows={3} onChange={(_, value) => setExtraInfo(value)} />
+      <ComboBox
+        placeholder="Select a letter code"
+        onPendingValueChanged={updateOptions}
+        onChange={(_a, _b, _c, value) => setSelected(value)}
+        options={options}
+        allowFreeInput
+        autoComplete="on"
+      />
+      <DefaultButton className="ms-welcome__action" iconProps={{ iconName: "ChevronRight" }} onClick={upload}>
+        Sumbit
       </DefaultButton>
-
-      <h1>{person}</h1>
-
-      <p>{message}</p>
-
-      {props.isOfficeInitialized}
-
-      {props.title}
-    </div>
+      <div>{message}</div>
+    </Stack>
   );
 }
-
-// export default class App extends React.Component<AppProps, AppState> {
-//   constructor(props, context) {
-//     super(props, context);
-//     this.state = {
-//       person: "No One",
-//       message: "Asked about outlook",
-//     };
-//   }
-
-//   componentDidMount() {}
-
-//   click = async () => {};
-
-//   render() {
-//     return (
-//       <div className="ms-welcome">
-//         <DefaultButton className="ms-welcome__action" iconProps={{ iconName: "ChevronRight" }} onClick={this.click}>
-//           Run
-//         </DefaultButton>
-
-//         <h1>{this.state.person}</h1>
-
-//         <p>{this.state.message}</p>
-//       </div>
-//     );
-//   }
-// }
